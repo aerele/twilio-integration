@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
+import json
 from frappe.model.document import Document
 from six import string_types
 from frappe.utils.password import get_decrypted_password
@@ -42,7 +43,7 @@ class WhatsAppMessage(Document):
 	@classmethod
 	def send_whatsapp_message(self, receiver_list, message, doctype, docname, media=None):
 		if isinstance(receiver_list, string_types):
-			receiver_list = loads(receiver_list)
+			receiver_list = json.loads(receiver_list)
 			if not isinstance(receiver_list, list):
 				receiver_list = [receiver_list]
 
