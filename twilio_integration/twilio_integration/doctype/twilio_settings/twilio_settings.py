@@ -49,7 +49,7 @@ class TwilioSettings(Document):
 		new_key = self.create_api_key(twilio)
 		self.api_key = new_key.sid
 		self.api_secret = new_key.secret
-		frappe.db.set_value('Twilio Settings', 'Twilio Settings', {
+		frappe.db.set_single_value('Twilio Settings', {
 			'api_key': self.api_key,
 			'api_secret': self.api_secret
 		})
@@ -59,7 +59,7 @@ class TwilioSettings(Document):
 		"""
 		credentials = self.get_application(twilio) or self.create_application(twilio)
 		self.twiml_sid = credentials.sid
-		frappe.db.set_value('Twilio Settings', 'Twilio Settings', 'twiml_sid', self.twiml_sid)
+		frappe.db.set_single_value('Twilio Settings', 'twiml_sid', self.twiml_sid)
 
 	def create_api_key(self, twilio):
 		"""Create API keys in twilio account.
