@@ -18,26 +18,35 @@ from ...utils import get_public_url
 
 class TwilioSettings(Document):
 	friendly_resource_name = "ERPNext" # System creates TwiML app & API keys with this name.
-
+	
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self._twilio_client = None
+  
 	def validate(self):
+		if not self.enabled:
+			return
 		self.validate_twilio_account()
 
+	def get_twilio_client(self):
+		if not (self.account_sid and self.auth_token):
+			frappe.throw(_("Account SID and Auth Token are required."))
+		if not self._twilio_client:
+			self._twilio_client = Client(self.account_sid, self.get_password("auth_token"))
+		return self._twilio_client
+	
 	def on_update(self):
 		# Single doctype records are created in DB at time of installation and those field values are set as null.
 		# This condition make sure that we handle null.
-		if not self.account_sid:
-			return
-
-		twilio = Client(self.account_sid, self.get_password("auth_token"))
+		twilio = self.get_twilio_client()
 		self.set_api_credentials(twilio)
 		self.set_application_credentials(twilio)
 		self.reload()
 
 	def validate_twilio_account(self):
 		try:
-			twilio = Client(self.account_sid, self.get_password("auth_token"))
+			twilio = self.get_twilio_client()
 			twilio.api.accounts(self.account_sid).fetch()
-			return twilio
 		except Exception:
 			frappe.throw(_("Invalid Account SID or Auth Token."))
 
