@@ -39,7 +39,10 @@ class TwilioSettings(Document):
   
 	def update_twilio_account(self):
 		twilio = self.get_twilio_client()
-		self.set_api_credentials(twilio)
+  
+		if not (self.api_key and self.api_secret):
+			self.set_api_credentials(twilio)
+   
 		self.set_application_credentials(twilio)
 		self.reload()
 		
