@@ -1,5 +1,7 @@
-from pyngrok import ngrok
 import frappe
+import re
+from pyngrok import ngrok
+from frappe import _
 from frappe.utils import get_url
 
 
@@ -26,3 +28,7 @@ def merge_dicts(d1: dict, d2: dict):
 	... {'name1': {'age': 20, 'phone': '+xxx'}, 'name2': {'age': 30, 'phone': '+yyy'}}
 	"""
 	return {k:{**v, **d2.get(k, {})} for k, v in d1.items()}
+
+def validate_phone_number(phone_number):
+	if not re.match(r"^\+(?![\s0])[\d\s]+\d$", phone_number):
+		frappe.throw(_("Pickup contact phone must consist of a '+' followed by one or more digits."))
