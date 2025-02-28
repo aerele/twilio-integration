@@ -60,7 +60,8 @@
   {
    "fieldname": "total_participants",
    "fieldtype": "Int",
-   "label": "Total Participants"
+   "label": "Total Participants",
+   "read_only": 1
   },
   {
    "fieldname": "campaign",
@@ -110,7 +111,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-02-28 12:10:53.505730",
+ "modified": "2025-02-28 16:22:54.783961",
  "modified_by": "Administrator",
  "module": "Twilio Integration",
  "name": "WhatsApp Campaign",

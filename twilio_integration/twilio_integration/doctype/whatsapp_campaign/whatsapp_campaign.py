@@ -5,6 +5,7 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import get_site_url
 from frappe import _
+from ...utils import validate_phone_number
 from twilio_integration.twilio_integration.doctype.whatsapp_message.whatsapp_message import WhatsAppMessage
 
 supported_file_ext = ['jpg', 
@@ -18,7 +19,19 @@ supported_file_ext = ['jpg',
 ]
 
 class WhatsAppCampaign(Document):
+	
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.contacts = []
+  
+  
 	def validate(self):
+		self.validate_mandatory_fields()
+		self.validate_scheduled_time()
+		self.fetch_and_validate_recipients()
+		self.set_total_participants()
+  
+	def validate_scheduled_time(self):
 		if self.scheduled_time and self.status != 'Completed':
 			current_time = frappe.utils.now_datetime()
 			scheduled_time = frappe.utils.get_datetime(self.scheduled_time)
@@ -27,9 +40,13 @@ class WhatsAppCampaign(Document):
 				frappe.throw(_("Scheduled Time must be a future time."))
 
 			self.status = 'Scheduled'
-
-		self.all_missing_recipients()
 	
+	def validate_mandatory_fields(self):
+		fields = ['template_name', 'message']
+		for field in fields:
+			if not self.get(field):
+				frappe.throw(_("{0} is mandatory").format(self.meta.get_label(field)))
+		
 	def validate_attachment(self):
 		attachment = self.get_attachment()
 		if attachment:
@@ -38,7 +55,10 @@ class WhatsAppCampaign(Document):
 
 			if attachment.get_extension() not in supported_file_ext:
 				frappe.throw(_('Attachment format not supported.'))
-
+	
+	def set_total_participants(self):
+		self.total_participants = len(self.recipients)
+    
 	def get_attachment(self):
 		file = frappe.db.get_value("File", {"attached_to_name": self.doctype, "attached_to_doctype": self.name, "is_private":0}, 'name')
 
@@ -47,16 +67,17 @@ class WhatsAppCampaign(Document):
 		return None
 
 	def get_whatsapp_contact(self):
-		contacts = [recipient.whatsapp_no for recipient in self.recipients if recipient.whatsapp_no]
-
+		contacts = self.contacts
 		return contacts
 	
-	def all_missing_recipients(self):
+	def fetch_and_validate_recipients(self):
 		for recipient in self.recipients:
+			if not (recipient.campaign_for and recipient.recipient):
+				frappe.throw(_('{0} is missing recipient or campaign for.').format(recipient.name))
 			if not recipient.whatsapp_no:
 				recipient.whatsapp_no = frappe.db.get_value(recipient.campaign_for, recipient.recipient, 'whatsapp_no')
-		
-		self.total_participants = len(self.recipients)
+			validate_phone_number(recipient.whatsapp_no)
+			self.contacts.append(recipient.whatsapp_no)
 
 	@frappe.whitelist()
 	def get_doctype_list(self):
@@ -69,11 +90,11 @@ class WhatsAppCampaign(Document):
 			WHERE cf.fieldname='whatsapp_no' AND dt.istable = 0 AND dt.issingle = 0 AND dt.is_tree = 0""")
   	
 		doctype = [
-      		{
-            	'label': dt, 
-             	'value': dt
+	  		{
+				'label': dt, 
+			 	'value': dt
 			} for dt in (standard_doctype + custom_doctype)
-        ]
+		]
 		return doctype
 
 
