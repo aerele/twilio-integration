@@ -68,7 +68,14 @@ class WhatsAppCampaign(Document):
 			cf INNER JOIN `tabDocType` dt ON dt.name = cf.dt
 			WHERE cf.fieldname='whatsapp_no' AND dt.istable = 0 AND dt.issingle = 0 AND dt.is_tree = 0""")
   	
-		return standard_doctype + custom_doctype
+		doctype = [
+      		{
+            	'label': dt, 
+             	'value': dt
+			} for dt in (standard_doctype + custom_doctype)
+        ]
+		return doctype
+
 
 	@frappe.whitelist()
 	def send_now(self):
@@ -87,5 +94,3 @@ class WhatsAppCampaign(Document):
 		)
 
 		self.db_set('status', 'Completed')
-
-

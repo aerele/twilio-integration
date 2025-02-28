@@ -80,8 +80,7 @@
    "fieldname": "recipients",
    "fieldtype": "Table",
    "label": "Recipients",
-   "options": "WhatsApp Campaign Recipient",
-   "reqd": 1
+   "options": "WhatsApp Campaign Recipient"
   },
   {
    "fieldname": "messge_section",
@@ -111,7 +110,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-07-14 11:40:59.599233",
+ "modified": "2025-02-28 12:10:53.505730",
  "modified_by": "Administrator",
  "module": "Twilio Integration",
  "name": "WhatsApp Campaign",

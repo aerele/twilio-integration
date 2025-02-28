@@ -2,26 +2,21 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on('WhatsApp Campaign', {
-	setup: function(frm) {
+	onload: function(frm) {
 		frappe.call({
 			doc: frm.doc,
 			method: 'get_doctype_list',
 			callback: function(r) {
 				if(r.message) {
-					let options = []
-					r.message.forEach((dt) => {
-						options.push({
-							'label': dt,
-							'value': dt
-						});
-					})
-					frappe.meta.get_docfield('WhatsApp Campaign Recipient', 'campaign_for', frm.doc.name).options = [""].concat(options);
+					frappe.meta.get_docfield('WhatsApp Campaign Recipient', 'campaign_for', frm.doc.name).options = [""].concat(r.message);
 				}
+				frm.fields_dict.recipients.grid.add_new_row()
 			}
 		});
 	},
 
 	refresh: function(frm) {
+		frm.set_df_property("recipients", "reqd", 1);
 		if(frm.doc.status == 'Completed') {
 			frm.disable_form();
 			frm.disable_save();
