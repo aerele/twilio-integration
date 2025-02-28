@@ -26,7 +26,7 @@ class WhatsAppMessage(Document):
 		
 		except Exception as e:
 			self.db_set('status', "Error")
-			frappe.log_error(e, title = _('Twilio WhatsApp Message Error'))
+			frappe.log_error(message = _(e), title = _('Twilio WhatsApp Message Error'))
 	
 	def get_message_dict(self):
 		args = {
