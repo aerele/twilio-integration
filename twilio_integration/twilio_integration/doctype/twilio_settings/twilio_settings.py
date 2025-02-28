@@ -7,7 +7,7 @@ import frappe
 from frappe.model.document import Document
 from frappe import _
 from twilio.rest import Client
-from ...utils import get_public_url
+from ...utils import get_public_url, validate_phone_number
 
 class TwilioSettings(Document):
 	friendly_resource_name = "ERPNext" # System creates TwiML app & API keys with this name.
@@ -19,22 +19,35 @@ class TwilioSettings(Document):
 	def validate(self):
 		if not self.enabled:
 			return
+		self.validate_mandatory_fields()
+		self.validate_whatsapp_number()
 		self.validate_twilio_account()
-
-	def get_twilio_client(self):
-		if not (self.account_sid and self.auth_token):
-			frappe.throw(_("Account SID and Auth Token are required."))
-		if not self._twilio_client:
-			self._twilio_client = Client(self.account_sid, self.get_password("auth_token"))
-		return self._twilio_client
-	
+  
 	def on_update(self):
 		# Single doctype records are created in DB at time of installation and those field values are set as null.
 		# This condition make sure that we handle null.
+		self.update_twilio_account()
+  
+	def validate_mandatory_fields(self):
+		fields = ["whatsapp_no", "account_sid", "auth_token", "reply_message"]
+		for field in fields:
+			if not self.get(field):
+				frappe.throw(_("{0} is mandatory").format(self.meta.get_label(field)))
+	
+	def validate_whatsapp_number(self):
+		validate_phone_number(self.whatsapp_no)
+  
+	def update_twilio_account(self):
 		twilio = self.get_twilio_client()
 		self.set_api_credentials(twilio)
 		self.set_application_credentials(twilio)
 		self.reload()
+		
+	def get_twilio_client(self):
+		if not self._twilio_client:
+			self._twilio_client = Client(self.account_sid, self.get_password("auth_token"))
+		return self._twilio_client
+	
 
 	def validate_twilio_account(self):
 		try:
@@ -46,8 +59,6 @@ class TwilioSettings(Document):
 	def set_api_credentials(self, twilio):
 		"""Generate Twilio API credentials if not exist and update them.
 		"""
-		if self.api_key and self.api_secret:
-			return
 		new_key = self.create_api_key(twilio)
 		self.api_key = new_key.sid
 		self.api_secret = new_key.secret

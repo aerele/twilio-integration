@@ -92,6 +92,7 @@
    "fieldname": "whatsapp_no",
    "fieldtype": "Data",
    "label": "Number",
+   "mandatory_depends_on": "eval: doc.enabled",
    "options": "Phone"
   },
   {
@@ -108,7 +109,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2021-07-08 00:46:42.317641",
+ "modified": "2025-02-28 13:40:12.974554",
  "modified_by": "Administrator",
  "module": "Twilio Integration",
  "name": "Twilio Settings",
