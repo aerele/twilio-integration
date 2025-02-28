@@ -29,6 +29,6 @@ def merge_dicts(d1: dict, d2: dict):
 	"""
 	return {k:{**v, **d2.get(k, {})} for k, v in d1.items()}
 
-def validate_phone_number(phone_number):
+def validate_phone_number(phone_number : str) -> None:
 	if not re.match(r"^\+(?![\s0])[\d\s]+\d$", phone_number):
 		frappe.throw(_("Pickup contact phone must consist of a '+' followed by one or more digits."))
