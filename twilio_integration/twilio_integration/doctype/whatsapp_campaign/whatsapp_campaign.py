@@ -4,6 +4,7 @@
 import frappe
 from frappe.model.document import Document
 from frappe.utils import get_site_url
+from frappe import _
 from twilio_integration.twilio_integration.doctype.whatsapp_message.whatsapp_message import WhatsAppMessage
 
 supported_file_ext = ['jpg', 
@@ -34,9 +35,6 @@ class WhatsAppCampaign(Document):
 		if attachment:
 			if attachment.file_size > 16777216:
 				frappe.throw(_('Attachment size must be less than 16MB.'))
-
-			if attachment.is_private:
-				frappe.throw(_('Attachment must be public.'))
 
 			if attachment.get_extension() not in supported_file_ext:
 				frappe.throw(_('Attachment format not supported.'))
@@ -69,7 +67,7 @@ class WhatsAppCampaign(Document):
 		custom_doctype = frappe.db.sql_list("""SELECT cf.dt FROM `tabCustom Field`
 			cf INNER JOIN `tabDocType` dt ON dt.name = cf.dt
 			WHERE cf.fieldname='whatsapp_no' AND dt.istable = 0 AND dt.issingle = 0 AND dt.is_tree = 0""")
-
+  	
 		return standard_doctype + custom_doctype
 
 	@frappe.whitelist()
