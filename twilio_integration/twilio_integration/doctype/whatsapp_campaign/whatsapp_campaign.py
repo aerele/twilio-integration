@@ -2,116 +2,125 @@
 # For license information, please see license.txt
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 from frappe.utils import get_site_url
-from frappe import _
-from ...utils import validate_phone_number
-from twilio_integration.twilio_integration.doctype.whatsapp_message.whatsapp_message import WhatsAppMessage
 
-supported_file_ext = ['jpg', 
-	'jpeg',
-	'png',
-	'mp3',
-	'ogg',
-	'amr',
-	'pdf',
-	'mp4'
-]
+from twilio_integration.twilio_integration.doctype.whatsapp_message.whatsapp_message import (
+    WhatsAppMessage,
+)
+
+from ...utils import validate_phone_number
+
+supported_file_ext = ["jpg", "jpeg", "png", "mp3", "ogg", "amr", "pdf", "mp4"]
+
 
 class WhatsAppCampaign(Document):
-	
-	def __init__(self, *args, **kwargs):
-		super().__init__(*args, **kwargs)
-		self.contacts = []
-  
-  
-	def validate(self):
-		self.validate_mandatory_fields()
-		self.validate_scheduled_time()
-		self.fetch_and_validate_recipients()
-		self.set_total_participants()
-  
-	def validate_scheduled_time(self):
-		if self.scheduled_time and self.status != 'Completed':
-			current_time = frappe.utils.now_datetime()
-			scheduled_time = frappe.utils.get_datetime(self.scheduled_time)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.contacts = []
 
-			if scheduled_time < current_time:
-				frappe.throw(_("Scheduled Time must be a future time."))
+    def validate(self):
+        self.validate_mandatory_fields()
+        self.validate_scheduled_time()
+        self.fetch_and_validate_recipients()
+        self.set_total_participants()
 
-			self.status = 'Scheduled'
-	
-	def validate_mandatory_fields(self):
-		fields = ['template_name', 'message']
-		for field in fields:
-			if not self.get(field):
-				frappe.throw(_("{0} is mandatory").format(self.meta.get_label(field)))
-		
-	def validate_attachment(self):
-		attachment = self.get_attachment()
-		if attachment:
-			if attachment.file_size > 16777216:
-				frappe.throw(_('Attachment size must be less than 16MB.'))
+    def validate_scheduled_time(self):
+        if self.scheduled_time and self.status != "Completed":
+            current_time = frappe.utils.now_datetime()
+            scheduled_time = frappe.utils.get_datetime(self.scheduled_time)
 
-			if attachment.get_extension() not in supported_file_ext:
-				frappe.throw(_('Attachment format not supported.'))
-	
-	def set_total_participants(self):
-		self.total_participants = len(self.recipients)
-    
-	def get_attachment(self):
-		file = frappe.db.get_value("File", {"attached_to_name": self.doctype, "attached_to_doctype": self.name, "is_private":0}, 'name')
+            if scheduled_time < current_time:
+                frappe.throw(_("Scheduled Time must be a future time."))
 
-		if file:
-			return frappe.get_doc('File', file)
-		return None
+            self.status = "Scheduled"
 
-	def get_whatsapp_contact(self):
-		contacts = self.contacts
-		return contacts
-	
-	def fetch_and_validate_recipients(self):
-		for recipient in self.recipients:
-			if not (recipient.campaign_for and recipient.recipient):
-				frappe.throw(_('{0} is missing recipient or campaign for.').format(recipient.name))
-			if not recipient.whatsapp_no:
-				recipient.whatsapp_no = frappe.db.get_value(recipient.campaign_for, recipient.recipient, 'whatsapp_no')
-			validate_phone_number(recipient.whatsapp_no)
-			self.contacts.append(recipient.whatsapp_no)
+    def validate_mandatory_fields(self):
+        fields = ["template_name", "message"]
+        for field in fields:
+            if not self.get(field):
+                frappe.throw(_("{0} is mandatory").format(self.meta.get_label(field)))
 
-	@frappe.whitelist()
-	def get_doctype_list(self):
-		standard_doctype = frappe.db.sql_list("""SELECT df.parent FROM `tabDocField` 
+    def validate_attachment(self):
+        attachment = self.get_attachment()
+        if attachment:
+            if attachment.file_size > 16777216:
+                frappe.throw(_("Attachment size must be less than 16MB."))
+
+            if attachment.get_extension() not in supported_file_ext:
+                frappe.throw(_("Attachment format not supported."))
+
+    def set_total_participants(self):
+        self.total_participants = len(self.recipients)
+
+    def get_attachment(self):
+        file = frappe.db.get_value(
+            "File",
+            {
+                "attached_to_name": self.doctype,
+                "attached_to_doctype": self.name,
+                "is_private": 0,
+            },
+            "name",
+        )
+
+        if file:
+            return frappe.get_doc("File", file)
+        return None
+
+    def get_whatsapp_contact(self):
+        contacts = self.contacts
+        return contacts
+
+    def fetch_and_validate_recipients(self):
+        for recipient in self.recipients:
+            if not (recipient.campaign_for and recipient.recipient):
+                frappe.throw(
+                    _("{0} is missing recipient or campaign for.").format(
+                        recipient.name
+                    )
+                )
+            if not recipient.whatsapp_no:
+                recipient.whatsapp_no = frappe.db.get_value(
+                    recipient.campaign_for, recipient.recipient, "whatsapp_no"
+                )
+            validate_phone_number(recipient.whatsapp_no)
+            self.contacts.append(recipient.whatsapp_no)
+
+    @frappe.whitelist()
+    def get_doctype_list(self):
+        standard_doctype = frappe.db.sql_list(
+            """SELECT df.parent FROM `tabDocField` 
 			df INNER JOIN `tabDocType` dt ON dt.name = df.parent
-			WHERE df.fieldname='whatsapp_no' AND dt.istable = 0 AND dt.issingle = 0 AND dt.is_tree = 0""")
-		
-		custom_doctype = frappe.db.sql_list("""SELECT cf.dt FROM `tabCustom Field`
+			WHERE df.fieldname='whatsapp_no' AND dt.istable = 0 AND dt.issingle = 0 AND dt.is_tree = 0"""
+        )
+
+        custom_doctype = frappe.db.sql_list(
+            """SELECT cf.dt FROM `tabCustom Field`
 			cf INNER JOIN `tabDocType` dt ON dt.name = cf.dt
-			WHERE cf.fieldname='whatsapp_no' AND dt.istable = 0 AND dt.issingle = 0 AND dt.is_tree = 0""")
-  	
-		doctype = [
-	  		{
-				'label': dt, 
-			 	'value': dt
-			} for dt in (standard_doctype + custom_doctype)
-		]
-		return doctype
+			WHERE cf.fieldname='whatsapp_no' AND dt.istable = 0 AND dt.issingle = 0 AND dt.is_tree = 0"""
+        )
 
+        doctype = [
+            {"label": dt, "value": dt} for dt in (standard_doctype + custom_doctype)
+        ]
+        return doctype
 
-	@frappe.whitelist()
-	def send_now(self):
-		self.validate_attachment()
-		media = self.get_attachment()
-		self.db_set('status', 'In Progress')
-		if media:
-			media = get_site_url(frappe.local.site) + media.file_url
+    @frappe.whitelist()
+    def send_now(self):
+        self.validate_attachment()
+        self.fetch_and_validate_recipients()
+        media = self.get_attachment()
+        self.db_set("status", "In Progress")
+        if media:
+            media = get_site_url(frappe.local.site) + media.file_url
+        WhatsAppMessage.send_whatsapp_message(
+            receiver_list=self.get_whatsapp_contact(),
+            message=self.message,
+            doctype=self.doctype,
+            docname=self.name,
+            media=media,
+        )
 
-		WhatsAppMessage.send_whatsapp_message(
-			receiver_list = self.get_whatsapp_contact(),
-			message = self.message,
-			doctype = self.doctype,
-			docname = self.name,
-			media = media
-		)
-
-		self.db_set('status', 'Completed')
+        self.db_set("status", "Completed")
