@@ -21,7 +21,6 @@ class WhatsAppCampaign(Document):
         self.contacts = []
 
     def validate(self):
-        self.validate_mandatory_fields()
         self.validate_scheduled_time()
         self.fetch_and_validate_recipients()
         self.set_total_participants()
@@ -35,12 +34,6 @@ class WhatsAppCampaign(Document):
                 frappe.throw(_("Scheduled Time must be a future time."))
 
             self.status = "Scheduled"
-
-    def validate_mandatory_fields(self):
-        fields = ["template_name", "message"]
-        for field in fields:
-            if not self.get(field):
-                frappe.throw(_("{0} is mandatory").format(self.meta.get_label(field)))
 
     def validate_attachment(self):
         attachment = self.get_attachment()
